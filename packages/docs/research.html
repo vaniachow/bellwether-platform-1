@@ -536,6 +536,7 @@
       <a href="media.html">Media</a>
       <a href="blueprints.html">Blueprints</a>
       <a href="research.html" class="active">Research</a>
+      <a href="llm-calibration.html">LLM Calibration</a>
       <a href="docs.html">Docs</a>
       <span class="nav-affil">Stanford &middot; Hoover Institution</span>
       <a href="mailto:paschal@stanford.edu" class="nav-cta">Request Access</a>
@@ -630,6 +631,7 @@
             <button class="tab-btn" data-tab="liquidity">Liquidity</button>
             <button class="tab-btn" data-tab="bias">Bias</button>
             <button class="tab-btn" data-tab="platforms">Platforms</button>
+            <button class="tab-btn" data-tab="cross-platform">Thresholds</button>
         </div>
 
         <!-- Tab: Aggregate Statistics -->
@@ -1072,6 +1074,154 @@
                 </div>
             </div>
         </div>
+        <!-- Tab: Cross-Platform Distribution Fit -->
+        <div class="tab-content" id="tab-cross-platform">
+            <div class="tab-intro">
+                <p>Kalshi and Polymarket both let traders bet on US GDP growth, but they structure the bets differently &mdash; making direct comparison impossible from raw prices alone. We use statistical modeling to translate both into a common language: <strong>what does each market think GDP growth will be?</strong> When two independent markets with real money at stake agree, that's a stronger signal than either one alone. When they disagree, it reveals where genuine uncertainty lies.</p>
+            </div>
+
+            <div style="background: var(--bw-bg); border-left: 3px solid var(--bw-blue); border-radius: 0 8px 8px 0; padding: 20px 24px; margin-bottom: 28px; max-width: 720px;">
+                <p style="font-size: 15px; color: var(--bw-text); line-height: 1.6; margin: 0;"><strong>Key finding:</strong> Despite trading completely different contract structures, Kalshi and Polymarket imply nearly identical GDP distributions &mdash; expected growth of 1.98% vs 2.11%, a gap well within the margin of error. Both markets tracked in lockstep as GDP expectations fell from ~3.3% in late January to ~2% by early March, suggesting the price signal is robust and not an artifact of any single platform.</p>
+            </div>
+
+            <!-- Stat cards -->
+            <div class="v2-stats-row" id="xplat-stats" style="padding: 0; margin-bottom: 24px;"></div>
+
+            <div class="subtab-nav">
+                <button class="subtab-btn active" onclick="switchSubtab('xplat-distribution', this)">Distribution</button>
+                <button class="subtab-btn" onclick="switchSubtab('xplat-timeseries', this)">Time Series</button>
+                <button class="subtab-btn" onclick="switchSubtab('xplat-methodology', this)">Methodology</button>
+            </div>
+
+            <!-- Subtab: Distribution -->
+            <div class="subtab-content active" id="subtab-xplat-distribution">
+                <div class="chart-row">
+                    <div class="chart-card chart-card-wide">
+                        <div class="chart-header">
+                            <h3>Implied GDP Distribution</h3>
+                            <p class="chart-description">Each curve shows what a market's traders collectively believe about GDP growth. The peak is the most likely outcome; the width shows how uncertain traders are. Shaded bands represent the range of plausible curves given market noise &mdash; where bands overlap between platforms, the markets essentially agree.</p>
+                        </div>
+                        <div id="chart-xplat-pdf" class="chart chart-tall"></div>
+                    </div>
+                </div>
+                <div class="chart-row">
+                    <div class="chart-card chart-card-wide">
+                        <div class="chart-header">
+                            <h3>Contract Prices vs Fitted Model</h3>
+                            <p class="chart-description">How well does our model match the actual market prices? Dots are real prices traders are paying; the line (or bars) show what the fitted model predicts. Close alignment means the model captures what the market is saying. <strong>Kalshi</strong> sells "GDP will exceed X%" contracts at multiple thresholds. <strong>Polymarket</strong> sells "GDP will land in this range" contracts for different buckets.</p>
+                        </div>
+                        <div class="chart-toggle-group">
+                            <button class="chart-toggle-btn active" onclick="switchXplatFitView('kalshi', this)">Kalshi</button>
+                            <button class="chart-toggle-btn" onclick="switchXplatFitView('polymarket', this)">Polymarket</button>
+                        </div>
+                        <div id="chart-xplat-fit" class="chart chart-tall"></div>
+                    </div>
+                </div>
+                <div class="chart-row">
+                    <div class="chart-card chart-card-wide">
+                        <div class="chart-header">
+                            <h3>Probability Queries</h3>
+                            <p class="chart-description">Once we have a full probability distribution from each market, we can answer any question about GDP &mdash; not just the specific thresholds each platform happens to trade. The 95% CI columns show the range of plausible answers given market noise. Small differences between platforms suggest genuine consensus; large differences highlight where the markets disagree.</p>
+                        </div>
+                        <div id="table-xplat-queries" class="chart-stats"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subtab: Time Series -->
+            <div class="subtab-content" id="subtab-xplat-timeseries">
+                <div class="chart-row">
+                    <div class="chart-card chart-card-wide">
+                        <div class="chart-header">
+                            <h3>Expected GDP Over Time</h3>
+                            <p class="chart-description">How has the market's GDP expectation shifted day by day? Each point is a full distribution fit for that day's prices; the smoothed line filters out daily noise to reveal the underlying trend. Both markets saw GDP expectations fall sharply from ~3.3% in late January to ~2% by March &mdash; likely reflecting tariff uncertainty. The confidence bands show how precisely we can estimate the trend.</p>
+                        </div>
+                        <div class="chart-toggle-group">
+                            <button class="chart-toggle-btn active" onclick="switchXplatTsView('kalman', this)">Kalman Smoothed</button>
+                            <button class="chart-toggle-btn" onclick="switchXplatTsView('raw', this)">Raw</button>
+                            <button class="chart-toggle-btn" onclick="switchXplatTsView('both', this)">Both</button>
+                        </div>
+                        <div id="chart-xplat-ts" class="chart chart-tall"></div>
+                    </div>
+                </div>
+                <div class="chart-row">
+                    <div class="chart-card chart-card-wide">
+                        <div class="chart-header">
+                            <h3>Model Uncertainty Over Time</h3>
+                            <p class="chart-description">How sure are traders about where GDP will land? A lower standard deviation means the market is concentrating bets around a narrow range; a higher value means traders see a wider range of plausible outcomes. Tracking this over time shows whether consensus is building or dissolving.</p>
+                        </div>
+                        <div id="chart-xplat-sigma" class="chart chart-tall"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subtab: Methodology -->
+            <div class="subtab-content" id="subtab-xplat-methodology">
+                <div class="chart-row">
+                    <div class="chart-card chart-card-wide" style="max-width: 720px;">
+                        <div class="chart-header">
+                            <h3>Why This Matters</h3>
+                        </div>
+                        <div style="font-size: 14px; color: var(--bw-text); line-height: 1.7;">
+                            <p style="margin-bottom: 16px;">Prediction markets are often cited as a single number &mdash; "markets say there's a 48% chance GDP exceeds 2%." But a single contract only tells you about one specific threshold. The full picture &mdash; what do traders <em>collectively</em> believe about the <em>entire range</em> of possible outcomes? &mdash; is locked inside the prices of many related contracts, and it's different on every platform.</p>
+
+                            <p style="margin-bottom: 20px;">This analysis unlocks that picture. By fitting a probability distribution to each platform's contract prices, we can answer <strong>any</strong> question about what the market expects &mdash; not just the questions each platform happens to list &mdash; and compare the two platforms on equal footing.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-row">
+                    <div class="chart-card chart-card-wide" style="max-width: 720px;">
+                        <div class="chart-header">
+                            <h3>The Problem: Apples vs Oranges</h3>
+                        </div>
+                        <div style="font-size: 14px; color: var(--bw-text); line-height: 1.7;">
+                            <p style="margin-bottom: 16px;"><strong>Kalshi</strong> trades "will GDP exceed X?" contracts at 8 different thresholds (1%, 1.5%, 2%, etc.). Each price tells you the probability that GDP growth will be <em>above</em> that line. Together, these trace out a <em>survival curve</em>.</p>
+
+                            <p style="margin-bottom: 16px;"><strong>Polymarket</strong> trades 7 range buckets ("GDP between 1% and 1.5%", "between 1.5% and 2%", etc.). Each price tells you the probability of landing <em>within</em> that range.</p>
+
+                            <p style="margin-bottom: 16px;">You can't directly compare a Kalshi "P(GDP&nbsp;>&nbsp;2%)" price with a Polymarket "P(1.5%&nbsp;&le;&nbsp;GDP&nbsp;&lt;&nbsp;2%)" price &mdash; they're answering different questions. But both encode information about the same underlying reality: where will GDP actually land?</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-row">
+                    <div class="chart-card chart-card-wide" style="max-width: 720px;">
+                        <div class="chart-header">
+                            <h3>The Solution: Distribution Fitting</h3>
+                        </div>
+                        <div style="font-size: 14px; color: var(--bw-text); line-height: 1.7;">
+                            <p style="margin-bottom: 16px;"><strong>Step 1: Verify they're measuring the same thing.</strong> We parse each platform's resolution rules and confirm both settle on the same data release: the Bureau of Economic Analysis (BEA) Advance Estimate of Q1 2026 GDP growth.</p>
+
+                            <p style="margin-bottom: 16px;"><strong>Step 2: Align timestamps.</strong> Kalshi and Polymarket report prices on different schedules. We match them to the same calendar dates so every comparison is apples-to-apples.</p>
+
+                            <p style="margin-bottom: 16px;"><strong>Step 3: Fit a bell curve.</strong> We find the Normal distribution (bell curve) whose shape best matches each platform's contract prices. A contract with a tight bid-ask spread and high trading volume gets more influence on the fit, since it carries more reliable price information. We also test Skew-Normal and two-component mixture models, and pick the simplest model that fits well.</p>
+
+                            <p style="margin-bottom: 16px;"><strong>Step 4: Quantify uncertainty.</strong> With only 7&ndash;8 contracts per platform, the fitted curve could shift if a few prices changed. We simulate this by randomly resampling the contracts 1,000 times and refitting each time. The range of results gives us confidence intervals &mdash; a built-in honesty check on how precisely we can pin down what the market thinks.</p>
+
+                            <p style="margin-bottom: 16px;"><strong>Step 5: Compare.</strong> Now both platforms speak the same language &mdash; a full probability distribution over GDP growth. We can ask any question ("what's the probability of a recession?", "what's the expected value?") and compare the answers, with error bars.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-row">
+                    <div class="chart-card chart-card-wide" style="max-width: 720px;">
+                        <div class="chart-header">
+                            <h3>How to Read the Charts</h3>
+                        </div>
+                        <div style="font-size: 14px; color: var(--bw-text); line-height: 1.7;">
+                            <p style="margin-bottom: 16px;"><strong>Distribution chart:</strong> Each bell curve shows one platform's implied beliefs. Where curves overlap, markets agree. The peak is the most likely GDP outcome; wider curves mean more uncertainty. Shaded bands show the range of curves that are consistent with the raw market prices.</p>
+
+                            <p style="margin-bottom: 16px;"><strong>Fit chart:</strong> Shows how well our model matches real prices. If dots sit on the line, the model is capturing what the market is saying. Gaps between dots and the line show where the model approximates.</p>
+
+                            <p style="margin-bottom: 16px;"><strong>Probability table:</strong> The payoff &mdash; precise answers to questions like "what's the chance GDP exceeds 2%?", derived from the fitted distribution. The CI columns tell you how confident we can be in each number.</p>
+
+                            <p style="margin-bottom: 16px;"><strong>Time series:</strong> How expectations have shifted over time. The smoothed line filters out daily noise. When both platforms trend in the same direction, it's a strong signal; divergence suggests emerging disagreement.</p>
+
+                            <p><strong>Stat cards:</strong> <em>E[GDP]</em> is the expected value &mdash; the market's best single guess. <em>Gap</em> measures how far apart the two platforms are. <em>JSD</em> (Jensen-Shannon Divergence) measures overall disagreement across the entire distribution; values below 0.05 indicate near-consensus.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- Hidden sidebar — preserved for dashboard.js compatibility, not displayed -->
@@ -1138,6 +1288,6 @@
   </div>
 </footer>
 
-<script src="js/dashboard.js?v=20260212"></script>
+<script src="js/dashboard.js?v=20260404"></script>
 </body>
 </html>

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4JTSRBJBY5"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-4JTSRBJBY5');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Calibration Benchmark &mdash; Bellwether</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,600;8..60,700&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css?v=20260211a">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+      :root {
+        --bw-blue: #4A90D9;
+        --bw-blue-light: #EBF2FC;
+        --bw-blue-muted: #A8C8E8;
+        --bw-dark: #1A1A1A;
+        --bw-text: #2C2C2C;
+        --bw-text-secondary: #6B6B6B;
+        --bw-border: #E8E8E8;
+        --bw-bg: #FAFAFA;
+        --bw-white: #FFFFFF;
+        --bw-red: #D94A4A;
+        --bw-green: #3A8A5C;
+        --bw-amber: #D4950A;
+        --font-serif: 'Source Serif 4', Georgia, serif;
+        --font-sans: 'DM Sans', -apple-system, sans-serif;
+        --font-mono: 'JetBrains Mono', monospace;
+      }
+
+      body {
+        font-family: var(--font-sans) !important;
+        color: var(--bw-text);
+        background: var(--bw-white);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .nav, .hero, .footer { display: none !important; }
+
+      /* V2 NAV */
+      .v2-nav {
+        position: fixed; top: 0; width: 100%; z-index: 100;
+        background: rgba(255,255,255,0.92);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--bw-border);
+        transition: box-shadow 0.3s;
+      }
+      .v2-nav.scrolled { box-shadow: 0 1px 8px rgba(0,0,0,0.06); }
+      .v2-nav .nav-inner {
+        max-width: 1200px; margin: 0 auto; padding: 0 32px;
+        height: 60px; display: flex; align-items: center; justify-content: space-between;
+      }
+      .v2-nav .nav-logo {
+        display: flex !important; align-items: center !important; gap: 10px !important;
+        font-family: var(--font-serif) !important; font-weight: 600 !important; font-size: 18px !important;
+        color: var(--bw-dark) !important; text-decoration: none !important; letter-spacing: 0 !important;
+      }
+      .v2-nav .nav-logo::before { display: none !important; content: none !important; }
+      .v2-nav .nav-logo .dot {
+        width: 10px; height: 10px; background: var(--bw-blue); border-radius: 50%; flex-shrink: 0;
+      }
+      .v2-nav .nav-links {
+        display: flex; align-items: center; gap: 32px;
+      }
+      .v2-nav .nav-links a {
+        font-family: var(--font-sans) !important; font-size: 14px !important; font-weight: 400 !important;
+        color: var(--bw-text-secondary) !important; text-decoration: none !important; transition: color 0.2s;
+      }
+      .v2-nav .nav-links a:hover { color: var(--bw-dark) !important; }
+      .v2-nav .nav-links a.active { color: var(--bw-dark) !important; font-weight: 500 !important; }
+      .v2-nav .nav-affil {
+        font-family: var(--font-sans); font-size: 12px; color: var(--bw-text-secondary);
+        opacity: 0.6; font-weight: 300; letter-spacing: 0.02em;
+      }
+      .v2-nav .nav-links a.nav-cta {
+        all: unset !important;
+        font-size: 13px !important; color: #FFFFFF !important;
+        background: #1A1A1A !important; padding: 8px 20px !important; border-radius: 6px !important;
+        cursor: pointer !important; white-space: nowrap !important;
+        font-family: var(--font-sans) !important; text-decoration: none !important;
+        display: inline-block !important; box-sizing: border-box !important;
+      }
+      .v2-nav .nav-links a.nav-cta:hover { background: #333 !important; }
+
+      /* PAGE LAYOUT */
+      .page-wrapper {
+        max-width: 1200px; margin: 0 auto; padding: 100px 32px 60px;
+      }
+
+      /* HEADER */
+      .page-header {
+        margin-bottom: 48px;
+      }
+      .page-header h1 {
+        font-family: var(--font-serif); font-size: 36px; font-weight: 700;
+        color: var(--bw-dark); margin: 0 0 12px;
+      }
+      .page-header .subtitle {
+        font-size: 16px; color: var(--bw-text-secondary); line-height: 1.6;
+        max-width: 720px;
+      }
+      .page-header .meta {
+        font-size: 13px; color: var(--bw-text-secondary); opacity: 0.6;
+        margin-top: 12px; font-family: var(--font-mono);
+      }
+
+      /* STAT CARDS */
+      .stat-grid {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+        margin-bottom: 48px;
+      }
+      .stat-card {
+        background: var(--bw-bg); border: 1px solid var(--bw-border);
+        border-radius: 12px; padding: 24px; text-align: center;
+      }
+      .stat-card .stat-value {
+        font-family: var(--font-mono); font-size: 32px; font-weight: 600;
+        color: var(--bw-dark); line-height: 1;
+      }
+      .stat-card .stat-label {
+        font-size: 13px; color: var(--bw-text-secondary); margin-top: 8px;
+        text-transform: uppercase; letter-spacing: 0.05em;
+      }
+      .stat-card .stat-detail {
+        font-size: 12px; color: var(--bw-text-secondary); margin-top: 4px;
+        opacity: 0.7;
+      }
+
+      /* CHART SECTIONS */
+      .chart-section {
+        margin-bottom: 48px;
+      }
+      .chart-section h2 {
+        font-family: var(--font-serif); font-size: 22px; font-weight: 600;
+        color: var(--bw-dark); margin: 0 0 8px;
+      }
+      .chart-section .chart-desc {
+        font-size: 14px; color: var(--bw-text-secondary); margin-bottom: 20px;
+        line-height: 1.5;
+      }
+      .chart-container {
+        background: var(--bw-bg); border: 1px solid var(--bw-border);
+        border-radius: 12px; padding: 24px;
+      }
+
+      /* CHART GRID */
+      .chart-grid-2 {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+        margin-bottom: 48px;
+      }
+
+      /* TABLE */
+      .market-table-container {
+        overflow-x: auto; margin-bottom: 48px;
+      }
+      .market-table {
+        width: 100%; border-collapse: collapse; font-size: 13px;
+      }
+      .market-table th {
+        text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--bw-border);
+        font-weight: 500; color: var(--bw-text-secondary); text-transform: uppercase;
+        font-size: 11px; letter-spacing: 0.05em; cursor: pointer; user-select: none;
+        white-space: nowrap;
+      }
+      .market-table th:hover { color: var(--bw-dark); }
+      .market-table th .sort-arrow { margin-left: 4px; opacity: 0.4; }
+      .market-table th.sorted .sort-arrow { opacity: 1; }
+      .market-table td {
+        padding: 10px 12px; border-bottom: 1px solid var(--bw-border);
+        vertical-align: middle;
+      }
+      .market-table tr:hover { background: var(--bw-blue-light); }
+      .market-table .cat-badge {
+        display: inline-block; padding: 2px 8px; border-radius: 4px;
+        font-size: 11px; font-weight: 500; white-space: nowrap;
+      }
+      .market-table .error-positive { color: var(--bw-red); }
+      .market-table .error-negative { color: var(--bw-green); }
+      .market-table .label-cell { max-width: 320px; }
+
+      /* FOOTER */
+      .page-footer {
+        border-top: 1px solid var(--bw-border); padding-top: 32px; margin-top: 48px;
+        font-size: 13px; color: var(--bw-text-secondary); text-align: center;
+      }
+
+      /* RESPONSIVE */
+      @media (max-width: 900px) {
+        .stat-grid { grid-template-columns: repeat(2, 1fr); }
+        .chart-grid-2 { grid-template-columns: 1fr; }
+        .v2-nav .nav-links a:not(.nav-cta) { display: none; }
+        .v2-nav .nav-affil { display: none; }
+      }
+      @media (max-width: 600px) {
+        .page-wrapper { padding: 80px 16px 40px; }
+        .page-header h1 { font-size: 28px; }
+        .stat-card .stat-value { font-size: 24px; }
+      }
+    </style>
+</head>
+<body>
+
+<!-- V2 NAV -->
+<nav class="v2-nav" id="nav">
+  <div class="nav-inner">
+    <a href="./" class="nav-logo"><span class="dot"></span>Bellwether</a>
+    <div class="nav-links">
+      <a href="monitor.html">Live Data</a>
+      <a href="globe.html">Globe</a>
+      <a href="media.html">Media</a>
+      <a href="blueprints.html">Blueprints</a>
+      <a href="research.html">Research</a>
+      <a href="llm-calibration.html" class="active">LLM Calibration</a>
+      <a href="docs.html">Docs</a>
+      <span class="nav-affil">Stanford &middot; Hoover Institution</span>
+      <a href="mailto:paschal@stanford.edu" class="nav-cta">Request Access</a>
+    </div>
+  </div>
+</nav>
+<script>
+(function() {
+  var nav = document.getElementById('nav');
+  window.addEventListener('scroll', function() {
+    nav.classList.toggle('scrolled', window.scrollY > 10);
+  });
+})();
+</script>
+
+<!-- PAGE CONTENT -->
+<div class="page-wrapper">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <h1>LLM Calibration Benchmark</h1>
+    <p class="subtitle">
+      How well do large language models estimate real-world probabilities? We compare LLM probability
+      estimates against cross-platform prediction market prices (Bellwether VWAP) across
+      <span id="n-markets">---</span> matched markets.
+    </p>
+    <p class="meta">
+      Model: <span id="model-name">---</span> &middot;
+      Generated: <span id="generated-at">---</span>
+    </p>
+  </div>
+
+  <!-- SCORECARD -->
+  <div class="stat-grid" id="stat-grid">
+    <div class="stat-card">
+      <div class="stat-value" id="stat-mae">---</div>
+      <div class="stat-label">Mean Absolute Error</div>
+      <div class="stat-detail">Lower is better</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-rmse">---</div>
+      <div class="stat-label">RMSE</div>
+      <div class="stat-detail">Root mean squared error</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-bias">---</div>
+      <div class="stat-label">Bias</div>
+      <div class="stat-detail" id="stat-bias-detail">Signed mean error</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-corr">---</div>
+      <div class="stat-label">Correlation</div>
+      <div class="stat-detail">Market vs LLM prices</div>
+    </div>
+  </div>
+
+  <!-- CALIBRATION CURVE -->
+  <div class="chart-section">
+    <h2>Calibration Curve</h2>
+    <p class="chart-desc">
+      If the LLM were perfectly calibrated, its estimates would fall on the diagonal.
+      Points above the line indicate overconfidence; below indicates underconfidence.
+    </p>
+    <div class="chart-container" id="chart-calibration"></div>
+  </div>
+
+  <!-- CATEGORY + LIQUIDITY CHARTS -->
+  <div class="chart-grid-2">
+    <div class="chart-section">
+      <h2>Error by Category</h2>
+      <p class="chart-desc">Mean absolute error broken down by market category.</p>
+      <div class="chart-container" id="chart-category"></div>
+    </div>
+    <div class="chart-section">
+      <h2>Error by Liquidity</h2>
+      <p class="chart-desc">Are LLMs worse on thin, low-liquidity markets?</p>
+      <div class="chart-container" id="chart-liquidity"></div>
+    </div>
+  </div>
+
+  <!-- SCATTER PLOT -->
+  <div class="chart-section">
+    <h2>Market Price vs LLM Estimate</h2>
+    <p class="chart-desc">
+      Each point is a matched market. Hover for details. Size represents trading volume.
+    </p>
+    <div class="chart-container" id="chart-scatter"></div>
+  </div>
+
+  <!-- MARKET TABLE -->
+  <div class="chart-section">
+    <h2>All Markets</h2>
+    <p class="chart-desc">
+      Full results for every benchmarked market. Click column headers to sort.
+    </p>
+    <div class="market-table-container">
+      <table class="market-table" id="market-table">
+        <thead>
+          <tr>
+            <th data-sort="label">Market <span class="sort-arrow">&#9650;</span></th>
+            <th data-sort="category_display">Category <span class="sort-arrow">&#9650;</span></th>
+            <th data-sort="market_price">Market Price <span class="sort-arrow">&#9650;</span></th>
+            <th data-sort="llm_estimate">LLM Estimate <span class="sort-arrow">&#9650;</span></th>
+            <th data-sort="error">Error <span class="sort-arrow">&#9650;</span></th>
+            <th data-sort="abs_error">|Error| <span class="sort-arrow">&#9650;</span></th>
+            <th data-sort="volume">Volume <span class="sort-arrow">&#9650;</span></th>
+          </tr>
+        </thead>
+        <tbody id="market-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="page-footer">
+    <p>Bellwether Metrics &middot; Stanford Hoover Institution &middot;
+      Data from Kalshi + Polymarket cross-platform matched markets</p>
+  </div>
+
+</div>
+
+<script src="js/llm-calibration.js"></script>
+</body>
+</html>
